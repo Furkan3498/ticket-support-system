@@ -49,7 +49,7 @@ const Header = () => {
           Destek Talep Sistemi
         </Typography>
 
-        {/* Büyük ekran butonlar */}
+      
         <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
           {token ? (
             <>
@@ -70,7 +70,7 @@ const Header = () => {
           )}
         </Box>
 
-        {/* Küçük ekran hamburger menü */}
+        
         <Box sx={{ display: { xs: "flex", md: "none" } }}>
           <IconButton
             size="large"

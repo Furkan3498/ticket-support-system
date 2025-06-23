@@ -12,6 +12,10 @@ import {
   TextField,
   Typography,
   TextareaAutosize,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import TicketService from "../../services/TicketService";
 
@@ -26,8 +30,12 @@ const AdminPanel = () => {
   const [tickets, setTickets] = useState([]);
   const [filterStatus, setFilterStatus] = useState("OPEN");
   const [loading, setLoading] = useState(false);
-  const [responseTexts, setResponseTexts] = useState({}); // ticketId -> response text
+  const [responseTexts, setResponseTexts] = useState({});
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
+
+  const [openStatusModal, setOpenStatusModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [newStatus, setNewStatus] = useState("");
 
   const fetchTickets = async (status) => {
     setLoading(true);
@@ -66,16 +74,22 @@ const AdminPanel = () => {
     }
   };
 
-  const handleStatusChange = async (ticketId, newStatus) => {
+  const handleStatusChange = async (ticketId, statusObject) => {
     setUpdatingStatusId(ticketId);
     try {
-      await TicketService.updateTicketStatus(ticketId, newStatus);
+      await TicketService.updateTicketStatus(ticketId, statusObject);
       fetchTickets(filterStatus);
     } catch (error) {
       console.error("Error updating ticket status", error);
       alert("Failed to update status");
     }
     setUpdatingStatusId(null);
+  };
+
+  const openStatusChangePopup = (ticket) => {
+    setSelectedTicket(ticket);
+    setNewStatus(ticket.status);
+    setOpenStatusModal(true);
   };
 
   const parseAdminResponse = (adminResponse) => {
@@ -138,22 +152,13 @@ const AdminPanel = () => {
                     <TableCell>{ticket.description}</TableCell>
                     <TableCell>{ticket.category}</TableCell>
                     <TableCell>
-                      <TextField
-                        select
+                      <Button
                         size="small"
-                        value={ticket.status}
-                        onChange={(e) => handleStatusChange(ticket.id, e.target.value)}
-                        disabled={updatingStatusId === ticket.id}
-                        sx={{ minWidth: 100 }}
+                        variant="outlined"
+                        onClick={() => openStatusChangePopup(ticket)}
                       >
-                        {statuses
-                          .filter((s) => s.value !== "")
-                          .map((option) => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                      </TextField>
+                        {ticket.status}
+                      </Button>
                     </TableCell>
                     <TableCell>{ticket.createdBy}</TableCell>
                     <TableCell>{parseAdminResponse(ticket.adminResponse)}</TableCell>
@@ -181,6 +186,38 @@ const AdminPanel = () => {
           </Table>
         </Paper>
       )}
+
+      <Dialog open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
+        <DialogTitle>Change Ticket Status</DialogTitle>
+        <DialogContent>
+          <TextField
+            select
+            label="New Status"
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.target.value)}
+            fullWidth
+            sx={{ mt: 2 }}
+          >
+            {statuses.filter(s => s.value !== "").map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenStatusModal(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              await handleStatusChange(selectedTicket.id, { status: newStatus });
+              setOpenStatusModal(false);
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
